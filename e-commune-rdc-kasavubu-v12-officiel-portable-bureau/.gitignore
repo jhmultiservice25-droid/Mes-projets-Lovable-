@@ -1,0 +1,5 @@
+.env
+.ecommune-postgresql.env
+apps/web/.env.local
+node_modules/
+apps/web/node_modules/

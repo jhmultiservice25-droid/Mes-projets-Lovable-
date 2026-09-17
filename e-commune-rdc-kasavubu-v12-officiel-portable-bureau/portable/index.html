@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#062a45" />
+  <title>e-Commune — Kasa-Vubu</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+<div id="app-shell">
+  <aside class="sidebar">
+    <div class="brand-block">
+      <div class="brand-mark"><span>★</span></div>
+      <div class="brand-copy">
+        <small>RÉPUBLIQUE DÉMOCRATIQUE DU CONGO</small>
+        <h1>e-Commune</h1>
+        <p>Administration territoriale</p>
+      </div>
+    </div>
+
+    <div class="entity-card">
+      <small>ENTITÉ TERRITORIALE DÉCENTRALISÉE</small>
+      <strong>Commune de Kasa-Vubu</strong>
+      <span>Kinshasa · RDC</span>
+    </div>
+
+    <nav id="nav" aria-label="Navigation principale"></nav>
+
+    <div class="profile-card">
+      <div class="profile-avatar">⌁</div>
+      <div>
+        <strong>Bourgmestre Kasa-Vubu</strong>
+        <span>Accès intégral · Autorité communale</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="workspace">
+    <header class="topbar">
+      <div class="page-heading">
+        <div id="breadcrumb" class="breadcrumb">E-COMMUNE / KASA-VUBU / TABLEAU DE BORD</div>
+        <h2 id="page-title">Tableau de bord —<br>Kasa-Vubu</h2>
+        <p id="page-subtitle">Pilotage consolidé de l’administration communale</p>
+      </div>
+      <div class="top-actions">
+        <label class="searchbox" aria-label="Rechercher">
+          <span>⌕</span>
+          <input id="global-search" type="search" autocomplete="off" />
+        </label>
+        <button id="btn-notifications" class="icon-btn" aria-label="Notifications"><i></i></button>
+        <button id="btn-create-agent" class="primary-action">+ Créer un accès agent</button>
+      </div>
+    </header>
+
+    <section id="content" class="content"></section>
+  </main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/app.js"></script>
+</body>
+</html>
