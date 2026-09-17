@@ -1,0 +1,40 @@
+e-COMMUNE RDC - KASA-VUBU - VERSION PORTABLE BUREAU WINDOWS
+================================================================
+
+METHODE RECOMMANDEE
+1. Extraire COMPLETEMENT le ZIP.
+2. Double-cliquer sur INSTALLER-PORTABLE-BUREAU.bat.
+3. Le programme cree sur le Bureau :
+   - le dossier e-Commune-Kasa-Vubu ;
+   - le raccourci e-Commune Kasa-Vubu.
+4. Double-cliquer ensuite sur le raccourci du Bureau.
+
+NODE.JS
+- Le logiciel s'execute avec Node.js.
+- Au premier lancement, il cree runtime\node.exe dans le dossier portable.
+- Si Node.js existe deja sur le PC, il reutilise ce moteur pour creer la copie portable.
+- Sinon il telecharge automatiquement Node.js v24.21.0 Windows x64 depuis nodejs.org,
+  verifie son SHA-256 officiel, puis conserve node.exe dans le dossier e-Commune.
+- Apres cette preparation, aucun npm install n'est requis pour ouvrir le mode portable.
+
+AUCUN DOCKER
+Docker et Docker Desktop ne sont pas utilises.
+
+DEMARRAGE DIRECT
+Le raccourci lance E-COMMUNE.bat, puis :
+runtime\node.exe portable\server.js
+Le navigateur s'ouvre sur http://127.0.0.1:3000 (ou un port voisin si 3000 est occupe).
+
+ARRET
+Fermer la fenetre noire du serveur Node.js ou utiliser Ctrl+C.
+
+IMPORTANT
+- Windows x64 est la cible de cette version portable.
+- Internet est necessaire uniquement si aucun Node.js utilisable n'est deja present lors de la premiere preparation du runtime.
+- Le code Next.js/PostgreSQL complet reste dans le projet pour la suite du developpement.
+
+
+TABLEAU DE BORD OFFICIEL
+- Le raccourci du Bureau ouvre directement le tableau de bord officiel de Kasa-Vubu.
+- La page d'accueil n'est plus la maquette portable simplifiee des versions precedentes.
+- La reference visuelle est conservee dans docs\dashboard-officiel-kasa-vubu.png.
