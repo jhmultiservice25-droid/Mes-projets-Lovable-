@@ -1,0 +1,15 @@
+{
+  "name": "e-commune-rdc",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "start": "npm --workspace apps/web run start"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
