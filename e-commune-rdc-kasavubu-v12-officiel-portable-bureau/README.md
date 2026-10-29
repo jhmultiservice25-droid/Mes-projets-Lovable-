@@ -336,3 +336,30 @@ Les démarches de dépôt, suivi et portail citoyen ne doivent pas être annonc�
 
 Les noms des responsables et les informations institutionnelles sont repris du portail consulté et doivent être validés par la commune avant publication officielle. Les contenus des actualités renvoient aux publications source plutôt que de recopier intégralement les articles.
 
+
+## Dépôt et suivi des dossiers citoyens — workflow ajouté
+
+### Pages
+- Portail public : `/portail-public`
+- Dépôt d’une demande : `/portail-public/deposer`
+- Suivi privé : `/portail-public/suivre` (référence + code secret remis une seule fois)
+- Registre de traitement interne : `/dossiers-publics` (agents habilités à traiter les plaintes/dossiers)
+
+### API
+- `POST /api/public-dossiers` : enregistre une demande citoyenne dans PostgreSQL.
+- `POST /api/public-dossiers/track` : renvoie le statut et les événements explicitement visibles au citoyen.
+- `GET /api/public-dossiers` : registre interne, accessible avec la permission `complaints:write`.
+- `PATCH /api/public-dossiers/:id` : mise à jour du statut et ajout d’un message citoyen, avec journal d’audit.
+
+### Installation
+La migration `database/migrations/006_public_dossier_workflow.sql` crée les tables de dossiers, événements publics et limitation de fréquence. Le script Windows `scripts/windows/Postgres-ECommune.ps1` applique automatiquement les migrations SQL triées par nom lors de la configuration de la base. Sur une installation existante, relancer `CONFIGURER-POSTGRESQL.bat` après sauvegarde préalable de la base.
+
+En production, configurer un `AUTH_SECRET` robuste dans l’environnement du serveur. La limitation publique compte au maximum cinq tentatives par heure et par adresse IP pseudonymisée lorsque le proxy fournit l’adresse client.
+
+### Limites et protections actuelles
+- Le code de suivi est généré aléatoirement, son empreinte SHA-256 seule est conservée en base, et le code en clair est renvoyé une seule fois après dépôt.
+- Les agents ne voient le registre nominatif qu’avec la permission `complaints:write`; les requêtes sont filtrées par `commune_id`.
+- Les changements de statut sont consignés dans le journal d’audit. Seuls les événements explicitement marqués comme visibles sont retournés au citoyen.
+- Les pièces jointes et les comptes citoyens ne sont pas encore activés. Le suivi utilise une référence et un code secret; le téléversement ne sera activé qu’après configuration d’un stockage privé, antivirus/contrôle de fichiers, autorisations, politique de conservation et suppression.
+- Le formulaire de dépôt ne remplace pas les exigences légales propres à chaque procédure et ne constitue pas une décision administrative.
+- La migration doit être appliquée avant le premier dépôt. Les tests de build, les essais d’intégration PostgreSQL et l’audit de sécurité restent à exécuter avant mise en production.
