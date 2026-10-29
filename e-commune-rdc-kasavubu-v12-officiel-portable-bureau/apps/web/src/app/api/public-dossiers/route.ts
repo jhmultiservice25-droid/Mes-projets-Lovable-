@@ -166,7 +166,7 @@ export async function POST(request: Request) {
             (commune_id, source_dossier_id, reference, case_type, applicant_name, request_description, status)
            VALUES ($1,$2,$3,$4,$5,$6,'SUBMITTED')
            RETURNING id::text`,
-          [commune.rows[0].id, created.rows[0].id, reference, requestType, requesterName, subject + "\\n\\n" + description],
+          [commune.rows[0].id, created.rows[0].id, reference, requestType, requesterName, subject + "\n\n" + description],
         );
         domainType = "urbanism_case";
         domainId = domain.rows[0].id;
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
             (commune_id, source_dossier_id, reference, category, description, priority, status)
            VALUES ($1,$2,$3,$4,$5,'NORMAL','OPEN')
            RETURNING id::text`,
-          [commune.rows[0].id, created.rows[0].id, reference, "PUBLIC_REQUEST_" + serviceCode, subject + "\\n\\n" + description],
+          [commune.rows[0].id, created.rows[0].id, reference, "PUBLIC_REQUEST_" + serviceCode, subject + "\n\n" + description],
         );
         domainType = "complaint";
         domainId = domain.rows[0].id;
