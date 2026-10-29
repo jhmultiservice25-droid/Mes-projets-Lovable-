@@ -360,6 +360,7 @@ En production, configurer un `AUTH_SECRET` robuste dans l’environnement du ser
 - Le code de suivi est généré aléatoirement, son empreinte SHA-256 seule est conservée en base, et le code en clair est renvoyé une seule fois après dépôt.
 - Les agents ne voient le registre nominatif qu’avec la permission `complaints:write`; les requêtes sont filtrées par `commune_id`.
 - Les changements de statut sont consignés dans le journal d’audit. Seuls les événements explicitement marqués comme visibles sont retournés au citoyen.
+- Chaque demande est reliée dans la même transaction au registre métier existant : `civil_registry_cases` pour l’état civil, `urbanism_cases` pour l’urbanisme, ou `complaints` pour les autres demandes. Les changements de statut synchronisent aussi l’entrée métier liée.
 - Les pièces jointes et les comptes citoyens ne sont pas encore activés. Le suivi utilise une référence et un code secret; le téléversement ne sera activé qu’après configuration d’un stockage privé, antivirus/contrôle de fichiers, autorisations, politique de conservation et suppression.
 - Le formulaire de dépôt ne remplace pas les exigences légales propres à chaque procédure et ne constitue pas une décision administrative.
 - La migration doit être appliquée avant le premier dépôt. Les tests de build, les essais d’intégration PostgreSQL et l’audit de sécurité restent à exécuter avant mise en production.
