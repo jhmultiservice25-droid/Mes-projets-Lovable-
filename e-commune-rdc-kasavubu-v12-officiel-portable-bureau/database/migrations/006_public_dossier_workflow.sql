@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public_dossiers (
   requester_name TEXT NOT NULL,
   requester_email TEXT NOT NULL,
   requester_phone TEXT NOT NULL,
+  privacy_consent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   status TEXT NOT NULL DEFAULT 'RECEIVED'
     CHECK (status IN ('RECEIVED','UNDER_REVIEW','NEEDS_INFO','APPROVED','REJECTED','COMPLETED')),
   assigned_to UUID REFERENCES users(id),
@@ -44,3 +45,11 @@ CREATE INDEX IF NOT EXISTS idx_public_dossier_events_dossier_date
 
 -- Les soumissions publiques ne doivent jamais être accessibles hors du tenant de la session.
 -- Les contrôles d'accès sont appliqués dans les routes API; activer RLS après validation du rôle SQL applicatif.
+
+
+-- Compteur de limitation des dépôts publics : IP pseudonymisée par HMAC côté serveur.
+CREATE TABLE IF NOT EXISTS public_dossier_rate_limits (
+  ip_hash TEXT PRIMARY KEY,
+  window_started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  hits INTEGER NOT NULL DEFAULT 0 CHECK (hits >= 0)
+);
