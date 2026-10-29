@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS public_dossiers (
   requester_email TEXT NOT NULL,
   requester_phone TEXT NOT NULL,
   privacy_consent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  domain_entity_type TEXT CHECK (domain_entity_type IS NULL OR domain_entity_type IN ('civil_registry_case','urbanism_case','complaint')),
+  domain_entity_id UUID,
   status TEXT NOT NULL DEFAULT 'RECEIVED'
     CHECK (status IN ('RECEIVED','UNDER_REVIEW','NEEDS_INFO','APPROVED','REJECTED','COMPLETED')),
   assigned_to UUID REFERENCES users(id),
@@ -53,3 +55,12 @@ CREATE TABLE IF NOT EXISTS public_dossier_rate_limits (
   window_started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   hits INTEGER NOT NULL DEFAULT 0 CHECK (hits >= 0)
 );
+
+-- Relier le dossier d'entrée au registre métier concerné : état civil, urbanisme ou plaintes/interventions.
+ALTER TABLE civil_registry_cases ADD COLUMN IF NOT EXISTS source_dossier_id UUID REFERENCES public_dossiers(id) ON DELETE SET NULL;
+ALTER TABLE urbanism_cases ADD COLUMN IF NOT EXISTS source_dossier_id UUID REFERENCES public_dossiers(id) ON DELETE SET NULL;
+ALTER TABLE urbanism_cases ADD COLUMN IF NOT EXISTS request_description TEXT;
+ALTER TABLE complaints ADD COLUMN IF NOT EXISTS source_dossier_id UUID REFERENCES public_dossiers(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_civil_case_source_dossier ON civil_registry_cases(source_dossier_id) WHERE source_dossier_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_urbanism_case_source_dossier ON urbanism_cases(source_dossier_id) WHERE source_dossier_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_complaint_source_dossier ON complaints(source_dossier_id) WHERE source_dossier_id IS NOT NULL;
