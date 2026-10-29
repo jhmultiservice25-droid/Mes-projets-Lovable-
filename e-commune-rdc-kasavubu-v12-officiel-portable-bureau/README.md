@@ -297,3 +297,42 @@ La V9 corrige le lanceur Windows :
 - les erreurs de démarrage sont enregistrées dans `logs\demarrage.log`.
 
 Démarrage recommandé : double-cliquer sur `E-COMMUNE.bat`.
+
+## Portail public Kasa-Vubu — branche d'intégration
+
+Cette branche ajoute un portail institutionnel public complémentaire au tableau de bord administratif :
+
+- Next.js : `apps/web/src/app/portail-public/page.tsx`, accessible sur `/portail-public`.
+- Mode portable Windows : `portable/portail-public.html`, accessible depuis le bouton « Portail public » du tableau de bord portable.
+- Présentation de la commune, exécutif communal, conseil municipal, sept quartiers et responsables référencés.
+- Annuaire des 41 services listés dans la page Services du portail consulté, avec recherche.
+- Démarches d’état civil référencées (six catégories) et sous-services d’urbanisme.
+- Actualités, projets et coordonnées publiques, avec liens vers les publications sources.
+- Lien de retour vers l’espace administratif.
+
+### Sources consultées
+
+- https://kasavubu.cd/
+- https://kasavubu.cd/presentation/
+- https://kasavubu.cd/histoire/
+- https://kasavubu.cd/bourgmestre/
+- https://kasavubu.cd/administration/
+- https://kasavubu.cd/quartiers/
+- https://kasavubu.cd/services/
+- https://kasavubu.cd/etat-civil/
+- https://kasavubu.cd/urbanisme/
+- https://kasavubu.cd/projets/
+- https://kasavubu.cd/actualites/
+- https://kasavubu.cd/deposer-dossier/
+- https://kasavubu.cd/suivre-dossier/
+- https://kasavubu.cd/portail-citoyen/
+- https://kasavubu.cd/contact/
+
+### Points de validation avant mise en production
+
+Le portail source comporte des incohérences visibles : certains indicateurs de la page d’accueil affichent zéro, les pages mentionnent 40 ou 41 services, et les coordonnées électroniques ne sont pas uniformes selon les pages ou les domaines. Le présent portail signale ces écarts et ne présente pas les chiffres comme définitivement certifiés.
+
+Les démarches de dépôt, suivi et portail citoyen ne doivent pas être annoncées comme opérationnelles tant que les formulaires ne sont pas connectés au backend, à l’authentification, à un registre de dossiers, aux contrôles d’accès, à la gestion sécurisée des pièces jointes et à l’audit. La version publique actuelle est une interface de présentation/orientation et ne génère pas de référence administrative.
+
+Les noms des responsables et les informations institutionnelles sont repris du portail consulté et doivent être validés par la commune avant publication officielle. Les contenus des actualités renvoient aux publications source plutôt que de recopier intégralement les articles.
+
