@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
@@ -12,12 +12,6 @@ const labels: Record<string, string> = {
   REJECTED: "Avis défavorable",
   COMPLETED: "Traité",
 };
-
-function safeEqualHex(a: string, b: string) {
-  const left = Buffer.from(a, "hex");
-  const right = Buffer.from(b, "hex");
-  return left.length === right.length && left.length > 0 && timingSafeEqual(left, right);
-}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { reference?: string; trackingToken?: string };
