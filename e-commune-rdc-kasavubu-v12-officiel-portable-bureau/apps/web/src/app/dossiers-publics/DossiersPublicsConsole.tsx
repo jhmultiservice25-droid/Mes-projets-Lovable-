@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Dossier = { id:string; reference:string; service_label:string; request_type:string; subject:string; requester_name:string; requester_email:string; requester_phone:string; status:string; statusLabel:string; created_at:string; updated_at:string; assigned_name:string|null };
+type Dossier = { id:string; reference:string; service_label:string; request_type:string; subject:string; description:string; requester_name:string; requester_email:string; requester_phone:string; status:string; statusLabel:string; created_at:string; updated_at:string; assigned_name:string|null };
 const statuses = [
   ["UNDER_REVIEW","En cours d’examen"],["NEEDS_INFO","Informations complémentaires requises"],["APPROVED","Avis favorable"],["REJECTED","Avis défavorable"],["COMPLETED","Traité"],
 ];
@@ -33,7 +33,7 @@ export function DossiersPublicsConsole() {
     }catch(e){setError(e instanceof Error?e.message:"Mise à jour impossible.");}finally{setSaving(false);}
   }
   const visible=rows.filter(row=>filter==="ALL"||row.status===filter);
-  return <div className="content">
+  return <div>
     <div className="institution-alert"><div><b>Dossiers citoyens</b><span>Registre réel alimenté par les dépôts publics enregistrés dans PostgreSQL.</span></div><button className="ghost-btn" onClick={()=>void load()}>Actualiser</button></div>
     <div className="metrics-grid">
       <div className="metric-card"><div className="metric-head">Total dossiers</div><strong className="metric-value">{rows.length}</strong></div>
@@ -48,7 +48,7 @@ export function DossiersPublicsConsole() {
     </section>
     {selected&&<div role="dialog" aria-modal="true" aria-label="Traiter le dossier" style={{position:"fixed",inset:0,zIndex:100,background:"#061d34aa",display:"grid",placeItems:"center",padding:18}}><section className="panel" style={{width:"min(700px,100%)",maxHeight:"90vh",overflow:"auto"}}>
       <div className="panel-head"><div><h2>Traiter {selected.reference}</h2><p>{selected.requester_name} · {selected.requester_email} · {selected.requester_phone}</p></div><button className="ghost-btn" onClick={()=>setSelected(null)}>Fermer</button></div>
-      <p><strong>{selected.subject}</strong></p><p style={{whiteSpace:"pre-wrap"}}>{selected.request_type} · {selected.service_label}</p>
+      <p><strong>{selected.subject}</strong></p><p>{selected.request_type} · {selected.service_label}</p><div style={{padding:14,background:"#f5f9fb",borderRadius:8,whiteSpace:"pre-wrap",fontSize:13}}>{selected.description}</div>
       <label style={label}>Nouveau statut<select style={input} value={status} onChange={e=>setStatus(e.target.value)}>{statuses.map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label>
       <label style={label}>Message visible par le citoyen<textarea style={input} rows={3} maxLength={1000} value={publicMessage} onChange={e=>setPublicMessage(e.target.value)} placeholder="Expliquer les pièces manquantes ou la prochaine étape."/></label>
       <label style={label}>Note interne (non visible au citoyen)<textarea style={input} rows={3} maxLength={2000} value={internalNote} onChange={e=>setInternalNote(e.target.value)} placeholder="Note interne de traitement."/></label>
