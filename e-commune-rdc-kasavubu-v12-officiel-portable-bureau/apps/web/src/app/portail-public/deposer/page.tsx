@@ -23,7 +23,8 @@ export default function DeposerDossierPage() {
     event.preventDefault();
     setError("");
     setBusy(true);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const serviceCode = String(form.get("serviceCode") || "");
     const serviceLabel = services.find(([code]) => code === serviceCode)?.[1] || "";
     const payload = {
@@ -44,7 +45,7 @@ export default function DeposerDossierPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Le dépôt a échoué.");
       setResult(data.dossier);
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue.");
     } finally {
@@ -77,7 +78,7 @@ export default function DeposerDossierPage() {
         <label style={{display:"flex",gap:10,alignItems:"flex-start",fontSize:12,color:"#536b7b"}}><input required type="checkbox" name="privacyConsent" style={{marginTop:3}}/><span>J’accepte que mes coordonnées et les informations fournies soient utilisées par le service communal compétent pour traiter cette demande.</span></label>
         {error && <p role="alert" style={{color:"#b51d32",background:"#fff0f2",padding:12,borderRadius:8}}>{error}</p>}
         <div style={{background:"#fff8d9",padding:14,borderRadius:8,fontSize:12,color:"#735e21"}}><strong>Important :</strong> ne joignez pas de pièces d’identité ni de documents sensibles dans la description. Le dépôt sécurisé de fichiers sera activé après mise en place du stockage privé et de la politique de conservation.</div>
-        <button disabled={busy} className="button primary" type="submit" style={{border:0,justifySelf:"start",opacity:busy?.6:1}}>{busy?"Enregistrement…":"Enregistrer la demande"}</button>
+        <button disabled={busy} className="button primary" type="submit" style={{border:0,justifySelf:"start",opacity:busy ? 0.6 : 1}}>{busy?"Enregistrement…":"Enregistrer la demande"}</button>
       </form>}
       <p style={{fontSize:11,color:"#637d8f",marginTop:18}}>En cas d’indisponibilité, contactez le guichet communal. Ce portail ne confirme pas automatiquement les frais légaux ni les pièces exigibles.</p>
     </section>
