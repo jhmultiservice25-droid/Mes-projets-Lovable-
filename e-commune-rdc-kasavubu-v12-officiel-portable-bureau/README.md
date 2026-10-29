@@ -332,7 +332,7 @@ Cette branche ajoute un portail institutionnel public complémentaire au tableau
 
 Le portail source comporte des incohérences visibles : certains indicateurs de la page d’accueil affichent zéro, les pages mentionnent 40 ou 41 services, et les coordonnées électroniques ne sont pas uniformes selon les pages ou les domaines. Le présent portail signale ces écarts et ne présente pas les chiffres comme définitivement certifiés.
 
-Les démarches de dépôt, suivi et portail citoyen ne doivent pas être annoncées comme opérationnelles tant que les formulaires ne sont pas connectés au backend, à l’authentification, à un registre de dossiers, aux contrôles d’accès, à la gestion sécurisée des pièces jointes et à l’audit. La version publique actuelle est une interface de présentation/orientation et ne génère pas de référence administrative.
+Dans cette branche, le dépôt et le suivi par référence + code secret sont raccordés à PostgreSQL et à un registre métier correspondant. Leur activation en production dépend encore de l’application de la migration 006, de la configuration d’AUTH_SECRET, des tests d’intégration et de la validation institutionnelle. Les comptes citoyens et les pièces jointes sécurisées ne sont pas activés; le téléversement ne doit pas être annoncé comme disponible.
 
 Les noms des responsables et les informations institutionnelles sont repris du portail consulté et doivent être validés par la commune avant publication officielle. Les contenus des actualités renvoient aux publications source plutôt que de recopier intégralement les articles.
 
