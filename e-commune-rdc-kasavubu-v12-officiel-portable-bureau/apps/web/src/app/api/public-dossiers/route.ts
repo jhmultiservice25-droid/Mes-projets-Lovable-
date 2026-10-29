@@ -141,6 +141,50 @@ export async function POST(request: Request) {
          VALUES ($1,$2,'SUBMITTED','RECEIVED','Votre demande a été reçue par le portail. Elle doit encore être examinée par le service compétent.',TRUE)`,
         [commune.rows[0].id, created.rows[0].id],
       );
+
+      // Créer aussi l'entrée correspondante dans le registre métier existant.
+      let domainType = "complaint";
+      let domainId = "";
+      if (serviceCode === "ETAT_CIVIL") {
+        const normalized = (requestType + " " + subject).toLocaleLowerCase("fr");
+        const caseType = normalized.includes("naissance") ? "BIRTH"
+          : normalized.includes("mariage") ? "MARRIAGE"
+          : normalized.includes("décès") || normalized.includes("deces") || normalized.includes("inhumation") ? "DEATH"
+          : normalized.includes("copie") || normalized.includes("acte") ? "COPY" : "OTHER";
+        const domain = await client.query<{ id: string }>(
+          `INSERT INTO civil_registry_cases
+            (commune_id, source_dossier_id, case_type, reference, legal_basis, status)
+           VALUES ($1,$2,$3,$4,'Demande citoyenne reçue via le portail; base légale à vérifier par le service','SUBMITTED')
+           RETURNING id::text`,
+          [commune.rows[0].id, created.rows[0].id, caseType, reference],
+        );
+        domainType = "civil_registry_case";
+        domainId = domain.rows[0].id;
+      } else if (serviceCode === "URBANISME") {
+        const domain = await client.query<{ id: string }>(
+          `INSERT INTO urbanism_cases
+            (commune_id, source_dossier_id, reference, case_type, applicant_name, request_description, status)
+           VALUES ($1,$2,$3,$4,$5,$6,'SUBMITTED')
+           RETURNING id::text`,
+          [commune.rows[0].id, created.rows[0].id, reference, requestType, requesterName, subject + "\\n\\n" + description],
+        );
+        domainType = "urbanism_case";
+        domainId = domain.rows[0].id;
+      } else {
+        const domain = await client.query<{ id: string }>(
+          `INSERT INTO complaints
+            (commune_id, source_dossier_id, reference, category, description, priority, status)
+           VALUES ($1,$2,$3,$4,$5,'NORMAL','OPEN')
+           RETURNING id::text`,
+          [commune.rows[0].id, created.rows[0].id, reference, "PUBLIC_REQUEST_" + serviceCode, subject + "\\n\\n" + description],
+        );
+        domainType = "complaint";
+        domainId = domain.rows[0].id;
+      }
+      await client.query(
+        "UPDATE public_dossiers SET domain_entity_type=$3, domain_entity_id=$4 WHERE id=$1 AND commune_id=$2",
+        [created.rows[0].id, commune.rows[0].id, domainType, domainId],
+      );
       return created.rows[0];
     });
     return NextResponse.json({
