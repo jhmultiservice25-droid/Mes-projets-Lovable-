@@ -50,6 +50,7 @@ export async function DashboardShell({ children, title, subtitle }: { children: 
             {subtitle && <p>{subtitle}</p>}
           </div>
           <div className="top-actions">
+            <Link className="ghost-btn" href="/portail-public">Portail public ↗</Link>
             <label className="global-search"><span>⌕</span><input aria-label="Recherche globale" placeholder="Référence, citoyen, dossier…" /></label>
             <NotificationsButton />
             {hasPermission(session.role, "agents:create") ? <Link className="primary-btn" href="/personnel#nouvel-agent">+ Créer un accès agent</Link> : <Link className="primary-btn" href="/carte">Ouvrir la carte</Link>}
