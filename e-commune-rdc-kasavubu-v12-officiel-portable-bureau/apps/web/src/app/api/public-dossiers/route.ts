@@ -7,10 +7,11 @@ import { writeAudit } from "@/lib/audit";
 export const runtime = "nodejs";
 
 const MAX_TEXT = 4000;
-const allowedServices = new Set([
-  "ETAT_CIVIL", "URBANISME", "POPULATION", "ASSAINISSEMENT",
-  "DERCO", "AGRICULTURE", "SPORTS_LOISIRS", "AUTRE",
-]);
+const allowedServices: Record<string, string> = {
+  ETAT_CIVIL: "État civil", URBANISME: "Urbanisme et habitat", POPULATION: "Population et attestations",
+  ASSAINISSEMENT: "Assainissement et environnement", DERCO: "Développement communautaire (DERCO)",
+  AGRICULTURE: "Agriculture et marchés", SPORTS_LOISIRS: "Sports, jeunesse et loisirs", AUTRE: "Autre service communal",
+};
 const statusLabels: Record<string, string> = {
   RECEIVED: "Reçu",
   UNDER_REVIEW: "En cours d’examen",
@@ -22,9 +23,6 @@ const statusLabels: Record<string, string> = {
 
 function text(value: unknown, max = MAX_TEXT) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-function hashToken(value: string) {
-  return createHash("sha256").update(value).digest("hex");
 }
 function publicReference() {
   const date = new Date();
@@ -39,11 +37,11 @@ export async function GET() {
   try {
     const result = await query<{
       id: string; reference: string; service_label: string; request_type: string;
-      subject: string; requester_name: string; requester_email: string; requester_phone: string;
+      subject: string; description: string; requester_name: string; requester_email: string; requester_phone: string;
       status: string; created_at: string; updated_at: string; assigned_name: string | null;
     }>(
       `SELECT d.id::text, d.reference, d.service_label, d.request_type, d.subject,
-              d.requester_name, d.requester_email, d.requester_phone, d.status,
+              d.description, d.requester_name, d.requester_email, d.requester_phone, d.status,
               d.created_at::text, d.updated_at::text, u.full_name AS assigned_name
        FROM public_dossiers d
        LEFT JOIN users u ON u.id=d.assigned_to AND u.commune_id=d.commune_id
@@ -101,7 +99,7 @@ export async function POST(request: Request) {
     }
   }
   const serviceCode = text(body.serviceCode, 40);
-  const serviceLabel = text(body.serviceLabel, 100);
+  const serviceLabel = allowedServices[serviceCode] || "";
   const requestType = text(body.requestType, 100);
   const subject = text(body.subject, 180);
   const description = text(body.description, 3000);
@@ -110,7 +108,7 @@ export async function POST(request: Request) {
   const requesterPhone = text(body.requesterPhone, 40);
   const consent = body.privacyConsent === true;
 
-  if (!allowedServices.has(serviceCode) || !serviceLabel || !requestType || !subject ||
+  if (!allowedServices[serviceCode] || !serviceLabel || !requestType || !subject ||
       description.length < 20 || !requesterName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requesterEmail) ||
       requesterPhone.length < 6 || !consent) {
     return NextResponse.json({ error: "Vérifiez le service, le type de démarche, la description (20 caractères minimum), vos coordonnées et le consentement." }, { status: 400 });
