@@ -61,7 +61,7 @@ export default function DeposerDossierPage() {
     </header>
     <section className="section" style={{maxWidth:940,margin:"0 auto"}}>
       <span className="eyebrow">DÉMARCHES CITOYENNES</span><h1 style={{fontSize:"clamp(32px,5vw,48px)",color:"#062a45",margin:"12px 0"}}>Déposer une demande</h1>
-      <p style={{color:"#637d8f",maxWidth:720}}>Votre demande sera enregistrée dans le registre numérique de Kasa-Vubu. Le dépôt ne vaut ni validation administrative ni paiement de frais.</p>
+      <p style={{color:"#637d8f",maxWidth:720}}>Votre demande sera enregistrée dans le registre numérique pilote de Kasa-Vubu. Le dépôt ne vaut ni validation administrative ni paiement de frais; le service compétent doit encore l’examiner.</p>
       {result ? <section style={{border:"1px solid #b8dfc8",background:"#f1fbf5",borderRadius:14,padding:24,marginTop:24}}>
         <h2 style={{color:"#17643c"}}>Demande enregistrée</h2><p>Votre référence de dossier :</p><p style={{fontSize:24,fontWeight:800,letterSpacing:1}}>{result.reference}</p><p>Code privé de suivi (à conserver, il ne sera pas affiché une seconde fois) :</p><div style={{padding:14,background:"#fff",borderRadius:8,overflowWrap:"anywhere",fontFamily:"monospace"}}>{result.trackingToken}</div><p style={{fontSize:13,marginTop:16}}>Le code permet de consulter le dossier. Ne le partagez pas. L’administration doit encore examiner la demande.</p><Link className="button primary" href="/portail-public/suivre" style={{marginTop:12}}>Suivre le dossier</Link>
       </section> : <form onSubmit={submit} style={{display:"grid",gap:16,marginTop:24,border:"1px solid #dbe6ec",borderRadius:14,padding:24,background:"#fff"}}>
