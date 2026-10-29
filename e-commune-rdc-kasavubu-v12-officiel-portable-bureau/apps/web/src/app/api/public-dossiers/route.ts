@@ -34,7 +34,7 @@ function publicReference() {
 }
 
 export async function GET() {
-  const ctx = await requireApiPermission("complaints:view");
+  const ctx = await requireApiPermission("complaints:write");
   if (!ctx.ok) return ctx.response;
   try {
     const result = await query<{
