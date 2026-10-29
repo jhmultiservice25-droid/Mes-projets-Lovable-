@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { query, withTransaction } from "@/lib/db";
 import { requireApiPermission } from "@/lib/api-security";
@@ -75,6 +75,31 @@ export async function POST(request: Request) {
   if (!body) return NextResponse.json({ error: "Corps de requête invalide." }, { status: 400 });
   // Honeypot anti-robot: bots that fill this invisible field receive a generic success.
   if (text(body.website, 200)) return NextResponse.json({ ok: true });
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const clientIp = forwarded || request.headers.get("x-real-ip")?.trim() || "";
+  const rateSecret = process.env.AUTH_SECRET || (process.env.NODE_ENV !== "production" ? "ecommune-local-rate-limit-secret" : "");
+  if (process.env.NODE_ENV === "production" && !rateSecret) {
+    return NextResponse.json({ error: "Le service de dépôt n’est pas configuré pour la production." }, { status: 503 });
+  }
+  if (clientIp && rateSecret) {
+    const ipHash = createHmac("sha256", rateSecret).update(clientIp).digest("hex");
+    try {
+      const rate = await query<{ hits: number }>(
+        "INSERT INTO public_dossier_rate_limits (ip_hash, window_started_at, hits) " +
+        "VALUES ($1, now(), 1) " +
+        "ON CONFLICT (ip_hash) DO UPDATE SET " +
+        "hits = CASE WHEN public_dossier_rate_limits.window_started_at < now() - interval '1 hour' THEN 1 ELSE public_dossier_rate_limits.hits + 1 END, " +
+        "window_started_at = CASE WHEN public_dossier_rate_limits.window_started_at < now() - interval '1 hour' THEN now() ELSE public_dossier_rate_limits.window_started_at END " +
+        "RETURNING hits", [ipHash],
+      );
+      if (Number(rate.rows[0]?.hits || 0) > 5) {
+        return NextResponse.json({ error: "Trop de tentatives depuis cette connexion. Réessayez dans une heure." }, { status: 429 });
+      }
+    } catch (error) {
+      console.error("public dossier rate limit error", error);
+      return NextResponse.json({ error: "Le dépôt public n’est pas initialisé. Contactez l’administration." }, { status: 503 });
+    }
+  }
   const serviceCode = text(body.serviceCode, 40);
   const serviceLabel = text(body.serviceLabel, 100);
   const requestType = text(body.requestType, 100);
@@ -106,8 +131,8 @@ export async function POST(request: Request) {
       const created = await client.query<{ id: string; created_at: string }>(
         `INSERT INTO public_dossiers
           (commune_id, reference, tracking_token_hash, service_code, service_label, request_type,
-           subject, description, requester_name, requester_email, requester_phone, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'RECEIVED')
+           subject, description, requester_name, requester_email, requester_phone, privacy_consent_at, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,now(),'RECEIVED')
          RETURNING id::text, created_at::text`,
         [commune.rows[0].id, reference, tokenHash, serviceCode, serviceLabel, requestType,
           subject, description, requesterName, requesterEmail, requesterPhone],
