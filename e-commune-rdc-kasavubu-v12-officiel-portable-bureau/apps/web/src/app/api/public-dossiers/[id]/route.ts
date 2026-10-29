@@ -28,8 +28,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
 
   try {
     const updated = await withTransaction(async (client) => {
-      const current = await client.query<{ id: string; reference: string; status: string; subject: string }>(
-        "SELECT id::text, reference, status, subject FROM public_dossiers WHERE id=$1 AND commune_id=$2 FOR UPDATE",
+      const current = await client.query<{ id: string; reference: string; status: string; subject: string; domain_entity_type: string | null; domain_entity_id: string | null }>(
+        "SELECT id::text, reference, status, subject, domain_entity_type, domain_entity_id::text FROM public_dossiers WHERE id=$1 AND commune_id=$2 FOR UPDATE",
         [id, ctx.session.communeId],
       );
       const row = current.rows[0];
@@ -42,6 +42,33 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
          RETURNING id::text, reference, status, updated_at::text`,
         [id, ctx.session.communeId, nextStatus],
       );
+      if (row.domain_entity_type && row.domain_entity_id) {
+        if (row.domain_entity_type === "civil_registry_case") {
+          const domainStatus = nextStatus === "UNDER_REVIEW" ? "IN_REVIEW"
+            : nextStatus === "NEEDS_INFO" ? "NEEDS_INFO"
+            : nextStatus === "APPROVED" ? "READY_FOR_VALIDATION" : nextStatus;
+          await client.query(
+            "UPDATE civil_registry_cases SET status=$3 WHERE id=$1 AND commune_id=$2",
+            [row.domain_entity_id, ctx.session.communeId, domainStatus],
+          );
+        } else if (row.domain_entity_type === "urbanism_case") {
+          const domainStatus = nextStatus === "UNDER_REVIEW" ? "IN_REVIEW"
+            : nextStatus === "NEEDS_INFO" ? "NEEDS_INFO"
+            : nextStatus === "APPROVED" ? "READY_FOR_VALIDATION" : nextStatus;
+          await client.query(
+            "UPDATE urbanism_cases SET status=$3 WHERE id=$1 AND commune_id=$2",
+            [row.domain_entity_id, ctx.session.communeId, domainStatus],
+          );
+        } else if (row.domain_entity_type === "complaint") {
+          const domainStatus = nextStatus === "COMPLETED" ? "RESOLVED"
+            : nextStatus === "REJECTED" ? "CLOSED"
+            : nextStatus === "RECEIVED" ? "OPEN" : "IN_PROGRESS";
+          await client.query(
+            "UPDATE complaints SET status=$3, closed_at=CASE WHEN $3 IN ('RESOLVED','CLOSED') THEN now() ELSE NULL END WHERE id=$1 AND commune_id=$2",
+            [row.domain_entity_id, ctx.session.communeId, domainStatus],
+          );
+        }
+      }
       const eventMessage = publicMessage || (internalNote ? "Mise à jour interne du dossier." : `Le statut du dossier a été mis à jour : ${labels[nextStatus]}.`);
       await client.query(
         `INSERT INTO public_dossier_events
