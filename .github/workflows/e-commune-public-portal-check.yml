@@ -58,6 +58,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ecommune_test
           AUTH_SECRET: ci-only-test-secret-change-before-production
+          DEMO_MODE: "true"
+          DEMO_BOURGMESTRE_EMAIL: bourgmestre@demo.ecommune.cd
+          DEMO_BOURGMESTRE_PASSWORD: Ecommune-2026!
+          DEMO_COMMUNE_CODE: KIN-KSV
           NODE_ENV: production
         run: |
           npm run start --workspace apps/web -- --hostname 127.0.0.1 > /tmp/ecommune-next.log 2>&1 &
@@ -95,7 +99,32 @@ jobs:
           if (trackedResponse.status !== 200 || tracked.dossier?.status !== "RECEIVED" || tracked.events?.length !== 1) {
             throw new Error("Suivi public échoué: " + JSON.stringify(tracked));
           }
-          const privateList = await fetch(base + "/api/public-dossiers");
-          if (privateList.status !== 401) throw new Error("Le registre privé doit refuser les accès anonymes.");
-          console.log("Dépôt, liaison métier, suivi privé et contrôle d'accès: OK");
+          const anonymousList = await fetch(base + "/api/public-dossiers");
+          if (anonymousList.status !== 401) throw new Error("Le registre privé doit refuser les accès anonymes.");
+          const login = await fetch(base + "/api/auth/login", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ email: process.env.DEMO_BOURGMESTRE_EMAIL, password: process.env.DEMO_BOURGMESTRE_PASSWORD })
+          });
+          if (login.status !== 200) throw new Error("Connexion du compte de test impossible: " + await login.text());
+          const cookie = login.headers.get("set-cookie")?.split(";")[0];
+          if (!cookie) throw new Error("Cookie de session absent.");
+          const privateList = await fetch(base + "/api/public-dossiers", { headers: { cookie } });
+          const listData = await privateList.json();
+          if (privateList.status !== 200) throw new Error("Le registre doit être accessible au Bourgmestre.");
+          const staffDossier = listData.rows?.find(row => row.reference === created.dossier.reference);
+          if (!staffDossier) throw new Error("Dossier absent du registre administratif.");
+          const updated = await fetch(base + "/api/public-dossiers/" + staffDossier.id, {
+            method: "PATCH", headers: { "content-type": "application/json", cookie },
+            body: JSON.stringify({ status: "UNDER_REVIEW", publicMessage: "Votre demande est en cours d’examen.", internalNote: "Smoke test CI" })
+          });
+          if (updated.status !== 200) throw new Error("Traitement administratif échoué: " + await updated.text());
+          const trackedAfter = await fetch(base + "/api/public-dossiers/track", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ reference: created.dossier.reference, trackingToken: created.dossier.trackingToken })
+          });
+          const updatedTracking = await trackedAfter.json();
+          if (trackedAfter.status !== 200 || updatedTracking.dossier?.status !== "UNDER_REVIEW" || updatedTracking.events?.length !== 2) {
+            throw new Error("Mise à jour citoyenne non visible: " + JSON.stringify(updatedTracking));
+          }
+          console.log("Dépôt PostgreSQL, suivi privé, authentification agent, traitement et journal public: OK");
           NODE
