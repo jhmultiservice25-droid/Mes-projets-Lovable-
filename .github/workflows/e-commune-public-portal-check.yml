@@ -52,6 +52,27 @@ jobs:
           done
       - name: Install dependencies
         run: npm install
+      - name: Audit npm dependencies (diagnostic)
+        run: |
+          set +e
+          npm audit --json > /tmp/npm-audit.json
+          audit_exit=$?
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('/tmp/npm-audit.json', 'utf8'));
+          console.log('npm audit summary:', JSON.stringify(report.metadata?.vulnerabilities ?? {}, null, 2));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              package: name,
+              severity: item.severity,
+              direct: item.isDirect,
+              range: item.range,
+              fixAvailable: item.fixAvailable,
+              via: (item.via ?? []).map(v => typeof v === 'string' ? v : ({name:v.name, title:v.title, url:v.url, range:v.range})),
+            }));
+          }
+          NODE
+          echo "npm audit exit code: $audit_exit"
       - name: Build Next.js application
         run: npm run build
       - name: Smoke test public submission and tracking
