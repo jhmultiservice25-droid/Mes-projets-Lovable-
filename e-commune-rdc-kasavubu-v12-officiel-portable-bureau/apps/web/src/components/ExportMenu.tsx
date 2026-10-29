@@ -6,7 +6,7 @@ type ExportRow = Record<string, unknown>;
 type ExportColumn = { key: string; label: string };
 type ExportContext = { generatedBy: string; communeName: string; generatedAt: string };
 
-function printable(value: unknown) {
+function printable(value: unknown): string {
   if (value == null) return "";
   if (Array.isArray(value)) return value.map(printable).join(" • ");
   if (typeof value === "object") return JSON.stringify(value);
