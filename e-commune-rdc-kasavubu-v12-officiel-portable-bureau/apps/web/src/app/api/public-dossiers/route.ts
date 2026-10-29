@@ -118,7 +118,7 @@ export async function POST(request: Request) {
   }
 
   const trackingToken = randomBytes(32).toString("base64url");
-  const tokenHash = hashToken(trackingToken);
+  const tokenHash = createHash("sha256").update(trackingToken).digest("hex");
   const reference = publicReference();
   try {
     const result = await withTransaction(async (client) => {
