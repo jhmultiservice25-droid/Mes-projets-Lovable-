@@ -13,6 +13,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: e-commune-rdc-kasavubu-v12-officiel-portable-bureau
@@ -23,6 +37,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Validate PostgreSQL schema and migrations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE ecommune_test;"
+          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f database/pilot-kasa-vubu.sql
+          for migration in database/migrations/*.sql; do
+            echo "Applying $migration"
+            psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f "$migration"
+          done
       - name: Install dependencies
         run: npm install
       - name: Build Next.js application
