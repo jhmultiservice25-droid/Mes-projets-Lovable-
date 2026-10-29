@@ -38,7 +38,11 @@ export async function POST(request: Request) {
   if (!ctx.ok) return ctx.response;
   if (!canCreateAgents(ctx.session.role)) return NextResponse.json({ error: "Seul le Bourgmestre peut créer un compte agent dans sa commune." }, { status: 403 });
   const body = await request.json().catch(() => ({})) as { name?: string; email?: string; service?: string; role?: UserRole; legalActRef?: string; employeeRef?: string };
-  if (!body.name || !body.email || !body.service || !body.role || !allowedRoles.includes(body.role)) {
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const service = typeof body.service === "string" ? body.service.trim() : "";
+  const role = body.role;
+  if (!name || !email || !service || !role || !allowedRoles.includes(role)) {
     return NextResponse.json({ error: "Données agent incomplètes ou rôle non autorisé." }, { status: 400 });
   }
   try {
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
          VALUES ($1,lower($2),$3,$4,$5,$6,$7,NULL,TRUE,FALSE,$8)
          RETURNING id::text, full_name AS name, email, service_name AS service, role,
                    employee_reference AS employee_ref, legal_act_reference AS legal_act_ref, active, created_at::text`,
-        [ctx.session.communeId, body.email.trim(), body.name.trim(), body.role, body.service.trim(), body.employeeRef?.trim()||null, body.legalActRef?.trim()||null, ctx.session.userId],
+        [ctx.session.communeId, email, name, role, service, body.employeeRef?.trim()||null, body.legalActRef?.trim()||null, ctx.session.userId],
       );
       const dto=toDto(result.rows[0]);
       await writeAudit(client,{session:ctx.session,action:"AGENT_ACCOUNT_CREATE",entityType:"user",entityId:dto.id,legalReason:body.legalActRef||undefined,afterData:dto,request});

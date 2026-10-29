@@ -1,0 +1,151 @@
+name: e-Commune public portal checks
+
+on:
+  pull_request:
+    paths:
+      - "e-commune-rdc-kasavubu-v12-officiel-portable-bureau/**"
+      - ".github/workflows/e-commune-public-portal-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: e-commune-rdc-kasavubu-v12-officiel-portable-bureau
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Validate PostgreSQL schema and migrations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE ecommune_test;"
+          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f database/pilot-kasa-vubu.sql
+          for migration in database/migrations/*.sql; do
+            echo "Applying $migration"
+            psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Install dependencies
+        run: npm install
+      - name: Audit npm dependencies (diagnostic)
+        run: |
+          set +e
+          npm audit --json > /tmp/npm-audit.json
+          audit_exit=$?
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('/tmp/npm-audit.json', 'utf8'));
+          console.log('npm audit summary:', JSON.stringify(report.metadata?.vulnerabilities ?? {}, null, 2));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              package: name,
+              severity: item.severity,
+              direct: item.isDirect,
+              range: item.range,
+              fixAvailable: item.fixAvailable,
+              via: (item.via ?? []).map(v => typeof v === 'string' ? v : ({name:v.name, title:v.title, url:v.url, range:v.range})),
+            }));
+          }
+          NODE
+          echo "npm audit exit code: $audit_exit"
+      - name: Build Next.js application
+        run: npm run build
+      - name: Smoke test public submission and tracking
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/ecommune_test
+          AUTH_SECRET: ci-only-test-secret-change-before-production
+          DEMO_MODE: "true"
+          DEMO_BOURGMESTRE_EMAIL: bourgmestre@demo.ecommune.cd
+          DEMO_BOURGMESTRE_PASSWORD: Ecommune-2026!
+          DEMO_COMMUNE_CODE: KIN-KSV
+          NODE_ENV: production
+        run: |
+          npm run start --workspace apps/web -- --hostname 127.0.0.1 > /tmp/ecommune-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3000/portail-public >/dev/null; then break; fi
+            sleep 2
+          done
+          node --input-type=module <<'NODE'
+          const base = "http://127.0.0.1:3000";
+          const payload = {
+            serviceCode: "URBANISME",
+            serviceLabel: "Urbanisme et habitat",
+            requestType: "Demande d'information urbanistique",
+            subject: "Test d'intégration du dépôt public",
+            description: "Demande de test CI pour valider l'enregistrement du dossier dans le registre métier.",
+            requesterName: "Test automatisé",
+            requesterEmail: "ci-test@example.invalid",
+            requesterPhone: "+243000000000",
+            privacyConsent: true
+          };
+          const submitted = await fetch(base + "/api/public-dossiers", {
+            method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload)
+          });
+          const created = await submitted.json();
+          if (submitted.status !== 201 || !created.dossier?.reference || !created.dossier?.trackingToken) {
+            throw new Error("Dépôt public échoué: " + JSON.stringify(created));
+          }
+          const trackedResponse = await fetch(base + "/api/public-dossiers/track", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ reference: created.dossier.reference, trackingToken: created.dossier.trackingToken })
+          });
+          const tracked = await trackedResponse.json();
+          if (trackedResponse.status !== 200 || tracked.dossier?.status !== "RECEIVED" || tracked.events?.length !== 1) {
+            throw new Error("Suivi public échoué: " + JSON.stringify(tracked));
+          }
+          const anonymousList = await fetch(base + "/api/public-dossiers");
+          if (anonymousList.status !== 401) throw new Error("Le registre privé doit refuser les accès anonymes.");
+          const login = await fetch(base + "/api/auth/login", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ email: process.env.DEMO_BOURGMESTRE_EMAIL, password: process.env.DEMO_BOURGMESTRE_PASSWORD })
+          });
+          if (login.status !== 200) throw new Error("Connexion du compte de test impossible: " + await login.text());
+          const cookie = login.headers.get("set-cookie")?.split(";")[0];
+          if (!cookie) throw new Error("Cookie de session absent.");
+          const privateList = await fetch(base + "/api/public-dossiers", { headers: { cookie } });
+          const listData = await privateList.json();
+          if (privateList.status !== 200) throw new Error("Le registre doit être accessible au Bourgmestre.");
+          const staffDossier = listData.rows?.find(row => row.reference === created.dossier.reference);
+          if (!staffDossier) throw new Error("Dossier absent du registre administratif.");
+          const updated = await fetch(base + "/api/public-dossiers/" + staffDossier.id, {
+            method: "PATCH", headers: { "content-type": "application/json", cookie },
+            body: JSON.stringify({ status: "UNDER_REVIEW", publicMessage: "Votre demande est en cours d’examen.", internalNote: "Smoke test CI" })
+          });
+          if (updated.status !== 200) throw new Error("Traitement administratif échoué: " + await updated.text());
+          const trackedAfter = await fetch(base + "/api/public-dossiers/track", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ reference: created.dossier.reference, trackingToken: created.dossier.trackingToken })
+          });
+          const updatedTracking = await trackedAfter.json();
+          if (trackedAfter.status !== 200 || updatedTracking.dossier?.status !== "UNDER_REVIEW" || updatedTracking.events?.length !== 2) {
+            throw new Error("Mise à jour citoyenne non visible: " + JSON.stringify(updatedTracking));
+          }
+          console.log("Dépôt PostgreSQL, suivi privé, authentification agent, traitement et journal public: OK");
+          NODE

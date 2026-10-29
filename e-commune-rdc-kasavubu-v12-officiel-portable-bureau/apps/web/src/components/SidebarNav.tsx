@@ -13,6 +13,7 @@ const nav: Array<{ icon: string; label: string; href: string; permission: Permis
   { icon: "▦", label: "Commerces", href: "/commerces", permission: "business:view" },
   { icon: "▤", label: "Marchés & étalages", href: "/marches-etalages", permission: "business:view" },
   { icon: "!", label: "Plaintes & interventions", href: "/plaintes", permission: "complaints:view" },
+  { icon: "▣", label: "Dossiers citoyens", href: "/dossiers-publics", permission: "complaints:write" },
   { icon: "⌗", label: "Urbanisme", href: "/urbanisme", permission: "urbanism:view" },
   { icon: "▱", label: "Parcelles & domaine", href: "/parcelles", permission: "urbanism:view" },
   { icon: "✚", label: "Structures sanitaires", href: "/structures-sanitaires", permission: "health:view" },
