@@ -176,13 +176,13 @@ INSERT INTO health_facilities (
   address_detail, latitude, longitude, beds_capacity, services, source_reference, source_url
 )
 SELECT c.id, 'SAN-KSV-000', 'Hôpital du Cinquantenaire', 'Hôpital', 'TO_QUALIFY', 'EXISTING', 'ACTIVE',
-       'Kasa-Vubu', NULL, 'Avenue Pierre Mulele / ex-24 Novembre', -4.3419100, 15.2963100, 515,
+       'Kasa-Vubu', NULL::uuid, 'Avenue Pierre Mulele / ex-24 Novembre', -4.3419100, 15.2963100, 515,
        '["urgences","chirurgie","gynécologie","médecine spécialisée"]'::jsonb,
        'Ministère de la Santé; coordonnées OSM/Wikidata', 'https://sante.gouv.cd/hopitaux'
 FROM c
 UNION ALL
 SELECT c.id, 'SAN-KSV-001', 'Centre hospitalier d''État Mama Pamela Delargy', 'Centre hospitalier / référence', 'STATE', 'EXISTING', 'ACTIVE',
-       'Kasa-Vubu', NULL, 'Boulevard Opala, Kasa-Vubu', NULL, NULL, NULL,
+       'Kasa-Vubu', NULL::uuid, 'Boulevard Opala, Kasa-Vubu', NULL, NULL, NULL,
        '["premiers soins","maternité","soins généraux"]'::jsonb,
        'OMS Afrique — Zone de santé de Kasa-Vubu, 2021',
        'https://www.afro.who.int/fr/news/coronavirus-en-rdc-des-latrines-et-incinerateurs-modernes-fournis-par-loms-dans-les-centres?country=975&name=Democratic+Republic+of+Congo'
@@ -195,17 +195,17 @@ SELECT c.id, 'SAN-KSV-002', 'Centre de santé de référence CASOP', 'Centre de 
 FROM c, lodja
 UNION ALL
 SELECT c.id, 'SAN-KSV-003', 'Centre médical SONAL', 'Centre médical / hôpital', 'TO_QUALIFY', 'EXISTING', 'ACTIVE',
-       'Kasa-Vubu', NULL, 'Avenue Kasa-Vubu', -4.3523000, 15.3068100, NULL,
+       'Kasa-Vubu', NULL::uuid, 'Avenue Kasa-Vubu', -4.3523000, 15.3068100, NULL,
        '["consultations","soins généraux"]'::jsonb, 'Référentiel OSM / zone de santé', NULL
 FROM c
 UNION ALL
 SELECT c.id, 'SAN-KSV-004', 'Centre de santé Chrisco', 'Centre de santé', 'TO_QUALIFY', 'EXISTING', 'TO_VERIFY',
-       'Kasa-Vubu', NULL, 'Rue Oshwe', NULL, NULL, NULL, '["consultations","santé sexuelle et reproductive"]'::jsonb,
+       'Kasa-Vubu', NULL::uuid, 'Rue Oshwe', NULL, NULL, NULL, '["consultations","santé sexuelle et reproductive"]'::jsonb,
        'Projet ASSK — Zone de santé de Kasa-Vubu', NULL
 FROM c
 UNION ALL
 SELECT c.id, 'SAN-KSV-005', 'Centre de santé Sainte-Marie', 'Centre de santé', 'TO_QUALIFY', 'EXISTING', 'TO_VERIFY',
-       'Kasa-Vubu', NULL, 'Rue Ikelemba', NULL, NULL, NULL, '["consultations","santé sexuelle et reproductive"]'::jsonb,
+       'Kasa-Vubu', NULL::uuid, 'Rue Ikelemba', NULL, NULL, NULL, '["consultations","santé sexuelle et reproductive"]'::jsonb,
        'Projet ASSK — Zone de santé de Kasa-Vubu', NULL
 FROM c
 ON CONFLICT (commune_id, code) DO UPDATE SET
