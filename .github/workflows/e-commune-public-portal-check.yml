@@ -85,15 +85,7 @@ jobs:
           NODE_ENV: production
         run: |
           TEST_HASH=$(node -e 'const {scryptSync,randomBytes}=require("node:crypto"); const salt=randomBytes(16); console.log("scrypt$"+salt.toString("hex")+"$"+scryptSync(process.env.CI_TEST_ACCOUNT_PASSWORD,salt,64).toString("hex"));')
-          # This is an isolated, disposable CI database. Reactivate the seeded pilot
-          # identity here only so the smoke test can exercise the production login flow.
-          # The application migration keeps this demo identity disabled by default.
-          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -c "UPDATE users SET active = TRUE, password_hash = '$TEST_HASH' WHERE lower(email) = 'bourgmestre@demo.ecommune.cd' AND employee_reference = 'DEMO-BGM-KSV';"
-          test_user_count=$(psql -h 127.0.0.1 -U postgres -d ecommune_test -tA -c "SELECT count(*) FROM users WHERE lower(email) = 'bourgmestre@demo.ecommune.cd' AND employee_reference = 'DEMO-BGM-KSV' AND active = TRUE AND password_hash IS NOT NULL;")
-          if [ "$test_user_count" != "1" ]; then
-            echo "CI test account was not provisioned exactly once."
-            exit 1
-          fi
+          psql -h 127.0.0.1 -U postgres -d ecommune_test -v ON_ERROR_STOP=1 -v test_hash="$TEST_HASH" -v test_email="$CI_TEST_ACCOUNT_EMAIL" -c "UPDATE users SET password_hash = :'test_hash' WHERE lower(email)=lower(:'test_email') AND active=TRUE;"
           npm run start --workspace apps/web -- --hostname 127.0.0.1 > /tmp/ecommune-next.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
