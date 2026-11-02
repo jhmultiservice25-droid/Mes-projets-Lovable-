@@ -28,6 +28,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Export audit unavailable", error);
+    // This endpoint confirms that an export was audited. Never report success
+    // when the audit record could not be committed.
+    return NextResponse.json(
+      { error: "Export bloqué : journal d'audit indisponible. Réessayez ultérieurement." },
+      { status: 503 },
+    );
   }
 
   return NextResponse.json({

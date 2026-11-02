@@ -10,7 +10,14 @@ export function getPool() {
     globalWithPool.__ecommunePool = new Pool({
       connectionString,
       max: Number(process.env.DATABASE_POOL_MAX || 10),
-      ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+      // Keep certificate verification enabled. Supply the issuing CA when the
+      // database provider uses a private certificate authority.
+      ssl: process.env.DATABASE_SSL === "true"
+        ? {
+            rejectUnauthorized: true,
+            ...(process.env.DATABASE_SSL_CA ? { ca: process.env.DATABASE_SSL_CA.replace(/\\n/g, "\n") } : {}),
+          }
+        : undefined,
       connectionTimeoutMillis: Number(process.env.DATABASE_CONNECT_TIMEOUT_MS || 2500),
     });
   }
